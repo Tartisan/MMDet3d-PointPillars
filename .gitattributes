@@ -1,0 +1,5 @@
+model/pts_voxel_encoder.onnx filter=lfs diff=lfs merge=lfs -text
+model/pts_voxel_encoder.onnx.cache filter=lfs diff=lfs merge=lfs -text
+model/pts_backbone.onnx filter=lfs diff=lfs merge=lfs -text
+model/pts_backbone.onnx.cache filter=lfs diff=lfs merge=lfs -text
+cfgs/anchors.txt filter=lfs diff=lfs merge=lfs -text

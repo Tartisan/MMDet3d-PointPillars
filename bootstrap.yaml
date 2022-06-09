@@ -1,0 +1,13 @@
+BoxFeature: 7
+ScoreThreshold: 0.1
+NmsOverlapThreshold: 0.25
+UseOnnx: True
+
+PfeOnnx: /workspace/code/mmdet3d-pointpillars/model/pts_voxel_encoder.onnx
+BackboneOnnx: /workspace/code/mmdet3d-pointpillars/model/pts_backbone.onnx
+
+ModelConfig: /workspace/code/mmdet3d-pointpillars/cfgs/hv_pointpillars_secfpn_waymo.yaml
+AnchorFile: /workspace/code/mmdet3d-pointpillars/cfgs/anchors.txt
+
+InputFile: /workspace/code/mmdet3d-pointpillars/data/2014008.bin
+OutputFile: /workspace/code/mmdet3d-pointpillars/data/boxes.txt

@@ -1,0 +1,50 @@
+CLASS_NAMES: ['Vehicle', 'Cyclist', 'Pedestrian']
+
+DATA_CONFIG:
+    _BASE_CONFIG_: cfgs/dataset_configs/waymo_dataset.yaml
+
+    POINT_CLOUD_RANGE: [-74.88, -74.88, -2, 74.88, 74.88, 4.0]
+    DATA_PROCESSOR:
+        -   NAME: mask_points_and_boxes_outside_range
+            REMOVE_OUTSIDE_BOXES: True
+
+        -   NAME: shuffle_points
+            SHUFFLE_ENABLED: {
+                'train': True,
+                'test': True
+            }
+        
+        -   NAME: transform_points_to_voxels
+            VOXEL_SIZE: [ 0.32, 0.32, 6.0 ]
+            MAX_POINTS_PER_VOXEL: 20
+            MAX_NUMBER_OF_VOXELS: {
+                'train': 32000,
+                'test': 32000
+            }
+MODEL:
+    NAME: PointPillar
+
+    DENSE_HEAD:
+        NAME: AnchorHeadSingle
+        CLASS_AGNOSTIC: False
+
+        TARGET_ASSIGNER_CONFIG:
+            NAME: AxisAlignedTargetAssigner
+            POS_FRACTION: -1.0
+            SAMPLE_SIZE: 512
+            NORM_BY_NUM_EXAMPLES: False
+            MATCH_HEIGHT: False
+            BOX_CODER: ResidualCoder
+            BOX_CODER_CONFIG: {
+                'code_size': 7,
+                'encode_angle_by_sincos': True
+            }
+
+
+    POST_PROCESSING:
+        NMS_CONFIG:
+            MULTI_CLASSES_NMS: False
+            NMS_TYPE: nms_gpu
+            NMS_THRESH: 0.7
+            NMS_PRE_MAXSIZE: 4096
+            NMS_POST_MAXSIZE: 500
