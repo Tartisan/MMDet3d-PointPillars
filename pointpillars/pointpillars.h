@@ -134,7 +134,7 @@ class PointPillars {
   int kMaxNumPillars;
   int kMaxNumPointsPerPillar;
   int kNumPointFeature = 4;  // [x, y, z, i]
-  int kNumAnchorSize;
+  int kNumAnchorSize = 7;
   // if you need to change this, watch the gather_point_feature_kernel func in
   // preprocess
   int kNumGatherPointFeature = 10;
@@ -143,7 +143,6 @@ class PointPillars {
   int kGridZSize;
   int kVfeChannels;
   int kRpnInputSize;
-  int kNumAnchor;
   int kNumInputBoxFeature;
   int kNumOutputBoxFeature;
   int kBatchSize;
@@ -151,6 +150,11 @@ class PointPillars {
   int kNumBoxCorners = 8;
   int kNmsPreMaxsize;
   int kNmsPostMaxsize;
+
+  std::vector<float> anchor_sizes_;
+  std::vector<float> anchor_bottom_heights_;
+  std::vector<float> anchor_rotations_;
+  std::vector<float> anchors_;
 
   int voxel_num_;
   // anchor
@@ -200,6 +204,11 @@ class PointPillars {
    */
   void InitParams();
   /**
+   * @brief Generate Anchors
+   * @details Called in the constructor
+   */
+  void GenerateAnchors();
+  /**
    * @brief Initializing TensorRT instances
    * @param[in] usr_onnx_ if true, parse ONNX
    * @details Called in the constructor
@@ -243,8 +252,7 @@ class PointPillars {
    */
   PointPillars(const float score_threshold, const float nms_overlap_threshold,
                const bool use_onnx, const std::string pfe_file,
-               const std::string rpn_file, const std::string pp_config,
-               float *anchor_data);
+               const std::string rpn_file, const std::string pp_config);
   ~PointPillars();
 
   /**

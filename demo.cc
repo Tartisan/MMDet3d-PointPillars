@@ -20,7 +20,7 @@ void Getinfo(void) {
     printf("  Capbility: %d.%d\n", prop.major, prop.minor);
     printf("  Global memory: %luMB\n", prop.totalGlobalMem >> 20);
     printf("  Const memory: %luKB\n", prop.totalConstMem >> 10);
-    printf("  SM in a block: %luKB\n", prop.sharedMemPerBlock >> 10);
+    printf("  Shared memory in a block: %luKB\n", prop.sharedMemPerBlock >> 10);
     printf("  warp size: %d\n", prop.warpSize);
     printf("  threads in a block: %d\n", prop.maxThreadsPerBlock);
     printf("  block dim: (%d,%d,%d)\n", prop.maxThreadsDim[0],
@@ -131,21 +131,16 @@ void test(void) {
   std::cout << "backbone_file: " << backbone_file << std::endl;
   const std::string pp_config = config["ModelConfig"].as<std::string>();
   std::string file_name = config["InputFile"].as<std::string>();
-  std::string anchor_file = config["AnchorFile"].as<std::string>();
+  std::cout << "config: " << pp_config << std::endl;
   std::cout << "data: " << file_name << std::endl;
-  std::cout << "anchor: " << anchor_file << std::endl;
-
-  float *anchor_data;
-  load_anchors(anchor_data, anchor_file);
 
   PointPillars pp(config["ScoreThreshold"].as<float>(),
                   config["NmsOverlapThreshold"].as<float>(),
                   config["UseOnnx"].as<bool>(), pfe_file, backbone_file,
-                  pp_config, anchor_data);
+                  pp_config);
 
   float *points_array;
   int in_num_points;
-  // in_num_points = Txt2Arrary(points_array,file_name,5);
   in_num_points = Bin2Arrary(points_array, file_name, 6);
   std::cout << "num points: " << in_num_points << std::endl;
 
@@ -166,7 +161,6 @@ void test(void) {
     Boxes2Txt(out_detections, boxes_file_name);
   }
 
-  delete[] anchor_data;
   delete[] points_array;
 };
 

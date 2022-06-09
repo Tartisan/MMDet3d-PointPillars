@@ -77,7 +77,6 @@ void PointPillars::InitParams() {
   kMaxNumPointsPerPillar =
       params["DATA_CONFIG"]["DATA_PROCESSOR"][2]["MAX_POINTS_PER_VOXEL"]
           .as<int>();
-  kNumAnchorSize = 7;
   kNumInputBoxFeature = 7;
   kNumOutputBoxFeature = params["MODEL"]["DENSE_HEAD"]["TARGET_ASSIGNER_CONFIG"]
                                ["BOX_CODER_CONFIG"]["code_size"]
@@ -97,14 +96,50 @@ void PointPillars::InitParams() {
   kGridYSize =
       static_cast<int>((kMaxYRange - kMinYRange) / kPillarYSize);  // 468
   kGridZSize = static_cast<int>((kMaxZRange - kMinZRange) / kPillarZSize);  // 1
+  assert(1 == kGridZSize);
   kRpnInputSize = kVfeChannels * kGridYSize * kGridXSize;
+
+  for (const auto &anchor_size :
+       params["MODEL"]["DENSE_HEAD"]["ANCHOR_SIZES"]) {
+    anchor_sizes_.push_back(anchor_size.as<float>());
+  }
+  for (const auto &anchor_bottom_height :
+       params["MODEL"]["DENSE_HEAD"]["ANCHOR_BOTTOM_HEIGHTS"]) {
+    anchor_bottom_heights_.push_back(anchor_bottom_height.as<float>());
+  }
+  for (const auto &anchor_rotation :
+       params["MODEL"]["DENSE_HEAD"]["ANCHOR_ROTATIONS"]) {
+    anchor_rotations_.push_back(anchor_rotation.as<float>());
+  }
+}
+
+void PointPillars::GenerateAnchors() {
+  for (int i = 0; i < kGridYSize; ++i) {
+    float y = kMinYRange + (i + 0.5) * kPillarYSize;
+    for (int j = 0; j < kGridXSize; ++j) {
+      float x = kMinXRange + (j + 0.5) * kPillarXSize;
+      for (int k = 0; k < kNumClass; ++k) {
+        float z = anchor_bottom_heights_[k];
+        float l = anchor_sizes_[k * kNumClass + 0];
+        float w = anchor_sizes_[k * kNumClass + 1];
+        float h = anchor_sizes_[k * kNumClass + 2];
+        for (float ro : anchor_rotations_) {
+          anchors_.insert(anchors_.end(), {x, y, z, l, w, h, ro});
+        }
+      }
+    }
+  }
+  assert((ANCHOR_NUM * kNumAnchorSize) == (int)anchors_.size());
+  GPU_CHECK(cudaMemcpy(dev_anchors_, anchors_.data(),
+                       ANCHOR_NUM * kNumAnchorSize * sizeof(float),
+                       cudaMemcpyHostToDevice));
 }
 
 PointPillars::PointPillars(const float score_threshold,
                            const float nms_overlap_threshold,
                            const bool use_onnx, const std::string pfe_file,
                            const std::string backbone_file,
-                           const std::string pp_config, float *anchor_data)
+                           const std::string pp_config)
     : score_threshold_(score_threshold),
       nms_overlap_threshold_(nms_overlap_threshold),
       use_onnx_(use_onnx),
@@ -114,10 +149,7 @@ PointPillars::PointPillars(const float score_threshold,
   InitParams();
   InitTRT(use_onnx_);
   DeviceMemoryMalloc();
-
-  GPU_CHECK(cudaMemcpy(dev_anchors_, anchor_data,
-                       ANCHOR_NUM * kNumAnchorSize * sizeof(float),
-                       cudaMemcpyHostToDevice));
+  GenerateAnchors();
 
   preprocess_points_cuda_ptr_.reset(new PreprocessPointsCuda(
       kNumThreads, kMaxNumPillars, kMaxNumPointsPerPillar, kNumPointFeature,
@@ -133,8 +165,7 @@ PointPillars::PointPillars(const float score_threshold,
   postprocess_cuda_ptr_.reset(new PostprocessCuda(
       kNumThreads, float_min, float_max, kNumClass, kNmsPreMaxsize,
       score_threshold_, nms_overlap_threshold_, kNmsPreMaxsize, kNmsPostMaxsize,
-      kNumBoxCorners, kNumInputBoxFeature,
-      kNumOutputBoxFeature)); /*kNumOutputBoxFeature*/
+      kNumBoxCorners, kNumInputBoxFeature, kNumOutputBoxFeature));
 }
 
 void PointPillars::DeviceMemoryMalloc() {
@@ -395,7 +426,7 @@ void PointPillars::DoInference(const float *in_points_array,
                                std::vector<float> *out_scores) {
   SetDeviceMemoryToZero();
   cudaDeviceSynchronize();
-  // [STEP 1] : load pointcloud and anchors
+  // [STEP 1] : load pointcloud
   auto load_start = high_resolution_clock::now();
   float *dev_points;
   GPU_CHECK(cudaMalloc(reinterpret_cast<void **>(&dev_points),
@@ -469,7 +500,6 @@ void PointPillars::DoInference(const float *in_points_array,
   auto postprocess_end = high_resolution_clock::now();
 
   // release the stream and the buffers
-  duration<double> coor2voxel_cost = load_end - load_start;
   duration<double> preprocess_cost = preprocess_end - preprocess_start;
   duration<double> pfe_cost = pfe_end - pfe_start;
   duration<double> scatter_cost = scatter_end - scatter_start;
@@ -480,14 +510,13 @@ void PointPillars::DoInference(const float *in_points_array,
   std::cout << setiosflags(ios::left) << setw(14) << "Module" << setw(12)
             << "Time" << resetiosflags(ios::left) << std::endl;
   std::cout << "------------------------------------" << std::endl;
-  std::string Modules[] = {"Coor2voxel", "Preprocess",  "Pfe",    "Scatter",
+  std::string Modules[] = {"Preprocess", "Pfe",         "Scatter",
                            "Backbone",   "Postprocess", "Summary"};
-  double Times[] = {coor2voxel_cost.count(),  preprocess_cost.count(),
-                    pfe_cost.count(),         scatter_cost.count(),
-                    backbone_cost.count(),    postprocess_cost.count(),
-                    pointpillars_cost.count()};
+  double Times[] = {preprocess_cost.count(),  pfe_cost.count(),
+                    scatter_cost.count(),     backbone_cost.count(),
+                    postprocess_cost.count(), pointpillars_cost.count()};
 
-  for (int i = 0; i < 7; ++i) {
+  for (int i = 0; i < 6; ++i) {
     std::cout << setiosflags(ios::left) << setw(14) << Modules[i] << setw(8)
               << Times[i] * 1000 << " ms" << resetiosflags(ios::left)
               << std::endl;

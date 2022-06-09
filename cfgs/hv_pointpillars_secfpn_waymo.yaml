@@ -26,8 +26,11 @@ MODEL:
 
     DENSE_HEAD:
         NAME: AnchorHeadSingle
-        CLASS_AGNOSTIC: False
-
+        ANCHOR_SIZES: [ 4.73, 2.08, 1.77, 
+                        1.81, 0.84, 1.77, 
+                        0.91, 0.84, 1.74 ]
+        ANCHOR_BOTTOM_HEIGHTS: [ -0.0345, -0.1188, 0 ]
+        ANCHOR_ROTATIONS: [ 0, 1.57 ]
         TARGET_ASSIGNER_CONFIG:
             NAME: AxisAlignedTargetAssigner
             POS_FRACTION: -1.0
