@@ -89,6 +89,12 @@ void PointPillars::InitParams() {
       params["MODEL"]["POST_PROCESSING"]["NMS_CONFIG"]["NMS_POST_MAXSIZE"]
           .as<int>();
   kVfeChannels = 64;
+  score_threshold_ =
+      params["MODEL"]["POST_PROCESSING"]["NMS_CONFIG"]["SCORE_THRESH"]
+          .as<float>();
+  nms_overlap_threshold_ =
+      params["MODEL"]["POST_PROCESSING"]["NMS_CONFIG"]["NMS_THRESH"]
+          .as<float>();
 
   // Generate secondary parameters based on above.
   kGridXSize =
@@ -130,26 +136,24 @@ void PointPillars::GenerateAnchors() {
     }
   }
   assert((ANCHOR_NUM * kNumAnchorSize) == (int)anchors_.size());
+  GPU_CHECK(cudaMalloc(reinterpret_cast<void **>(&dev_anchors_),
+                       ANCHOR_NUM * kNumAnchorSize * sizeof(float)));
   GPU_CHECK(cudaMemcpy(dev_anchors_, anchors_.data(),
                        ANCHOR_NUM * kNumAnchorSize * sizeof(float),
                        cudaMemcpyHostToDevice));
 }
 
-PointPillars::PointPillars(const float score_threshold,
-                           const float nms_overlap_threshold,
-                           const bool use_onnx, const std::string pfe_file,
+PointPillars::PointPillars(const bool use_onnx, const std::string pfe_file,
                            const std::string backbone_file,
                            const std::string pp_config)
-    : score_threshold_(score_threshold),
-      nms_overlap_threshold_(nms_overlap_threshold),
-      use_onnx_(use_onnx),
+    : use_onnx_(use_onnx),
       pfe_file_(pfe_file),
       backbone_file_(backbone_file),
       pp_config_(pp_config) {
   InitParams();
   InitTRT(use_onnx_);
-  DeviceMemoryMalloc();
   GenerateAnchors();
+  DeviceMemoryMalloc();
 
   preprocess_points_cuda_ptr_.reset(new PreprocessPointsCuda(
       kNumThreads, kMaxNumPillars, kMaxNumPointsPerPillar, kNumPointFeature,
@@ -169,8 +173,6 @@ PointPillars::PointPillars(const float score_threshold,
 }
 
 void PointPillars::DeviceMemoryMalloc() {
-  GPU_CHECK(cudaMalloc(reinterpret_cast<void **>(&dev_anchors_),
-                       ANCHOR_NUM * kNumAnchorSize * sizeof(float)));
   // for pillars
   GPU_CHECK(cudaMalloc(reinterpret_cast<void **>(&dev_num_points_per_pillar_),
                        kMaxNumPillars * sizeof(float)));  // M
@@ -194,9 +196,10 @@ void PointPillars::DeviceMemoryMalloc() {
   GPU_CHECK(cudaMalloc(
       &rpn_buffers_[0],
       (kRpnInputSize + ANCHOR_NUM * kNumAnchorSize) * sizeof(float)));
-  GPU_CHECK(cudaMalloc(&rpn_buffers_[3], kNmsPreMaxsize * 9 * sizeof(float)));
-  GPU_CHECK(cudaMalloc(&rpn_buffers_[1], kNmsPreMaxsize * 10 * sizeof(float)));
-  GPU_CHECK(cudaMalloc(&rpn_buffers_[2], kNmsPreMaxsize * sizeof(int)));
+  GPU_CHECK(cudaMalloc(&rpn_buffers_[2],
+                       kNmsPreMaxsize * kNumOutputBoxFeature * sizeof(float)));
+  GPU_CHECK(
+      cudaMalloc(&rpn_buffers_[1], kNmsPreMaxsize * kNumClass * sizeof(float)));
 
   // for scatter kernel
   GPU_CHECK(cudaMalloc(reinterpret_cast<void **>(&dev_scattered_feature_),
@@ -223,7 +226,6 @@ PointPillars::~PointPillars() {
   GPU_CHECK(cudaFree(rpn_buffers_[0]));
   GPU_CHECK(cudaFree(rpn_buffers_[1]));
   GPU_CHECK(cudaFree(rpn_buffers_[2]));
-  GPU_CHECK(cudaFree(rpn_buffers_[3]));
 
   pfe_context_->destroy();
   backbone_context_->destroy();
@@ -257,10 +259,10 @@ void PointPillars::SetDeviceMemoryToZero() {
   GPU_CHECK(cudaMemset(
       rpn_buffers_[0], 0,
       (kRpnInputSize + ANCHOR_NUM * kNumAnchorSize) * sizeof(float)));
-  GPU_CHECK(cudaMemset(rpn_buffers_[3], 0, kNmsPreMaxsize * 9 * sizeof(float)));
-  GPU_CHECK(
-      cudaMemset(rpn_buffers_[1], 0, kNmsPreMaxsize * 10 * sizeof(float)));
-  GPU_CHECK(cudaMemset(rpn_buffers_[2], 0, kNmsPreMaxsize * sizeof(int)));
+  GPU_CHECK(cudaMemset(rpn_buffers_[2], 0,
+                       kNmsPreMaxsize * kNumOutputBoxFeature * sizeof(float)));
+  GPU_CHECK(cudaMemset(rpn_buffers_[1], 0,
+                       kNmsPreMaxsize * kNumClass * sizeof(float)));
   GPU_CHECK(cudaMemset(dev_scattered_feature_, 0,
                        kNumThreads * kGridYSize * kGridXSize * sizeof(float)));
 }
@@ -492,8 +494,8 @@ void PointPillars::DoInference(const float *in_points_array,
   // [STEP 6]: postprocess (multihead)
   auto postprocess_start = high_resolution_clock::now();
   postprocess_cuda_ptr_->DoPostprocessCuda(
-      reinterpret_cast<float *>(rpn_buffers_[3]),  // [box]
-      reinterpret_cast<float *>(rpn_buffers_[1]),  // [score]
+      reinterpret_cast<float *>(rpn_buffers_[2]),  // [bboxes]
+      reinterpret_cast<float *>(rpn_buffers_[1]),  // [scores]
       host_box_, host_score_, host_filtered_count_, *out_detections,
       *out_labels, *out_scores);
   // cudaDeviceSynchronize();

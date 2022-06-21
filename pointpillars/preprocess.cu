@@ -286,12 +286,12 @@ __global__ void gather_point_feature_kernel(
                                    num_point_feature +
                                ith_point * num_point_feature + 2];
 
-  // dev_pfe_gather_feature_[ith_pillar * max_num_points_per_pillar *
-  //                             num_gather_feature +
-  //                         ith_point * num_gather_feature + 3] =
-  //     dev_pillar_point_feature[ith_pillar * max_num_points_per_pillar *
-  //                                  num_point_feature +
-  //                              ith_point * num_point_feature + 3];
+  dev_pfe_gather_feature_[ith_pillar * max_num_points_per_pillar *
+                              num_gather_feature +
+                          ith_point * num_gather_feature + 3] =
+      dev_pillar_point_feature[ith_pillar * max_num_points_per_pillar *
+                                   num_point_feature +
+                               ith_point * num_point_feature + 3];
 
   dev_pfe_gather_feature_[ith_pillar * max_num_points_per_pillar *
                               num_gather_feature +

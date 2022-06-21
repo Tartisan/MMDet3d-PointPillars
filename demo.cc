@@ -80,7 +80,10 @@ int Bin2Arrary(float *&points_array, std::string file_name,
   // printf("Done");
 };
 
-void Boxes2Txt(std::vector<float> boxes, std::string file_name,
+void Boxes2Txt(const std::vector<float> &boxes, 
+               const std::vector<int> &labels, 
+               const std::vector<float> &scores, 
+               std::string file_name, 
                int num_feature = 7) {
   std::ofstream ofFile;
   ofFile.open(file_name, std::ios::out);
@@ -89,6 +92,8 @@ void Boxes2Txt(std::vector<float> boxes, std::string file_name,
       for (int j = 0; j < num_feature; ++j) {
         ofFile << boxes.at(i * num_feature + j) << " ";
       }
+      ofFile << labels.at(i) << " ";
+      ofFile << scores.at(i) << " ";
       ofFile << "\n";
     }
   }
@@ -134,14 +139,14 @@ void test(void) {
   std::cout << "config: " << pp_config << std::endl;
   std::cout << "data: " << file_name << std::endl;
 
-  PointPillars pp(config["ScoreThreshold"].as<float>(),
-                  config["NmsOverlapThreshold"].as<float>(),
-                  config["UseOnnx"].as<bool>(), pfe_file, backbone_file,
+  PointPillars pp(config["UseOnnx"].as<bool>(), pfe_file, backbone_file,
                   pp_config);
 
   float *points_array;
   int in_num_points;
-  in_num_points = Bin2Arrary(points_array, file_name, 6);
+  in_num_points =
+      Bin2Arrary(points_array, file_name, config["LoadDim"].as<int>(),
+                 config["UseDim"].as<int>());
   std::cout << "num points: " << in_num_points << std::endl;
 
   for (int _ = 0; _ < 4; _++) {
@@ -153,12 +158,14 @@ void test(void) {
     pp.DoInference(points_array, in_num_points, &out_detections, &out_labels,
                    &out_scores);
     cudaDeviceSynchronize();
-    int BoxFeature = 7;
-    int num_objects = out_detections.size() / BoxFeature;
+    size_t BoxFeature = 7;
+    size_t num_objects = out_detections.size() / BoxFeature;
     std::cout << "detected objects: " << num_objects << std::endl;
+    assert(num_objects == out_labels.size());
+    assert(num_objects == out_scores.size());
 
     std::string boxes_file_name = config["OutputFile"].as<std::string>();
-    Boxes2Txt(out_detections, boxes_file_name);
+    Boxes2Txt(out_detections, out_labels, out_scores, boxes_file_name);
   }
 
   delete[] points_array;

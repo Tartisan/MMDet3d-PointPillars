@@ -14,15 +14,15 @@ Overall inference has five phases:
 ## Model && Data
 
 The demo use the waymo data from Waymo Open Dataset.
-The onnx file can be converted by [mmdet3d_onnx_tools](https://github.com/speshowBUAA/mmdet3d_onnx_tools)
+The onnx file can be converted by [onnx_tools](https://github.com/Tartisan/mmdetection3d/tree/master/tools/onnx_tools)
 
 ### Prerequisites
 
-To build the pointpillars inference, **TensorRT** with PillarScatter layer and **CUDA** are needed. PillarScatter layer plugin is already implemented as a plugin for TRT in the demo.
+To build the pointpillars inference, **TensorRT** and **CUDA** are needed.
 
 ## Environments
 
-- NVIDIA A100-SXM4-40GB
+- NVIDIA RTX A4000 Laptop GPU
 - CUDA 11.1 + cuDNN 8.2.1 + TensorRT 8.2.3
 
 ### Compile && Run
@@ -41,19 +41,21 @@ You should install `open3d` in python environment.
 $ python tools/viewer.py
 ```
 
-<center><img src="https://images.weserv.nl/?url=https://article.biliimg.com/bfs/article/690fe472c1dfdb32fbb644487115790cb82f8060.png" width=60%></center>
+<center><img src="https://images.weserv.nl/?url=https://article.biliimg.com/bfs/article/dd4b2ea349cb4c390804401006dbc00a32182792.png" width=49%> <img src="https://images.weserv.nl/?url=https://article.biliimg.com/bfs/article/b92f9f1862b63c9ef8ce970e645c73092d302ad3.png" width=50%>
+trt fp16 model < --- > pytorch model
+</center>
 
 #### Performance in FP16
 
 ```
 | Function(unit:ms) | A100-SXM4-40GB |
 | ----------------- | -------------- |
-| Preprocess        | 0.270888 ms    |
-| Pfe               | 2.0598   ms    |
-| Scatter           | 0.078447 ms    |
-| Backbone          | 11.1322  ms    |
-| Postprocess       | 4.00043  ms    |
-| Summary           | 17.5418  ms    |
+| Preprocess        | 0.43786  ms    |
+| Pfe               | 3.27231  ms    |
+| Scatter           | 0.085242 ms    |
+| Backbone          | 71.0085  ms    |
+| Postprocess       | 1.79278  ms    |
+| Summary           | 76.601   ms    |
 ```
 
 ## Note

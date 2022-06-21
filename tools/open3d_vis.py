@@ -494,3 +494,12 @@ class Visualizer(object):
 
         self.o3d_visualizer.destroy_window()
         return
+
+    def add_points(self, points=None):
+        mesh_frame = geometry.TriangleMesh.create_coordinate_frame(
+            size=1, origin=[0, 0, 0])  # create coordinate frame
+        self.o3d_visualizer.add_geometry(mesh_frame)
+        if points is not None:
+            self.pcd, self.points_colors = _draw_points(
+                points, self.o3d_visualizer, self.points_size, self.point_color, 
+                self.mode)

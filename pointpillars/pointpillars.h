@@ -111,8 +111,6 @@ class Logger : public nvinfer1::ILogger {
 class PointPillars {
  private:
   // initialize in initializer list
-  const float score_threshold_;
-  const float nms_overlap_threshold_;
   const bool use_onnx_;
   const std::string pfe_file_;
   const std::string backbone_file_;
@@ -170,8 +168,10 @@ class PointPillars {
   // scatter
   float *dev_scattered_feature_;
   // backbone
-  void *rpn_buffers_[4];
+  void *rpn_buffers_[3];
   // postprocess
+  float score_threshold_;
+  float nms_overlap_threshold_;
   float *host_box_;
   float *host_score_;
   int *host_filtered_count_;
@@ -250,8 +250,7 @@ class PointPillars {
    * @param[in] rpn_file Region Proposal Network ONNX file path
    * @details Variables could be changed through point_pillars_detection
    */
-  PointPillars(const float score_threshold, const float nms_overlap_threshold,
-               const bool use_onnx, const std::string pfe_file,
+  PointPillars(const bool use_onnx, const std::string pfe_file,
                const std::string rpn_file, const std::string pp_config);
   ~PointPillars();
 

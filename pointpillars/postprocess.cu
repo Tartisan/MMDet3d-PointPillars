@@ -130,32 +130,29 @@ void PostprocessCuda::DoPostprocessCuda(const float* box_preds,
                        num_class_ * num_per_cls_ * sizeof(float),
                        cudaMemcpyDeviceToHost));
 
-  for (int class_idx = 0; class_idx < num_class_;
-       ++class_idx) {  // hardcode for class_map as {0, 12 , 34 , 5 ,67 ,89}
+  // hardcode for class_map as {0, 12 , 34 , 5 ,67 ,89}
+  for (int class_idx = 0; class_idx < num_class_; ++class_idx) {
     // init parameter
     host_filtered_count[class_idx] = 0;
 
-    float host_filtered_score[nms_pre_maxsize_];    // 1000
-    float host_filtered_box[nms_pre_maxsize_ * 7];  // 1000 * 7
+    float host_filtered_score[nms_pre_maxsize_];    // 3840
+    float host_filtered_box[nms_pre_maxsize_ * 7];  // 3840 * 7
     for (size_t idx = 0; idx < num_per_cls_; idx++) {
       float score = host_score[idx * num_class_ + class_idx];
+      // filter out boxes which threshold less than score_threshold
       if (score > score_threshold_ &&
-          host_filtered_count[class_idx] <
-              nms_pre_maxsize_)  // filter out boxes which threshold less than
-                                 // score_threshold
-      {
+          host_filtered_count[class_idx] < nms_pre_maxsize_) {
         host_filtered_score[host_filtered_count[class_idx]] = score;
-        for (size_t dim_idx = 0; dim_idx < 7;
-             dim_idx++)  // dim_idx = {x,y,z,dx,dy,dz,yaw}
-        {
+        // dim_idx = {x,y,z,dx,dy,dz,yaw}
+        for (size_t dim_idx = 0; dim_idx < 7; dim_idx++) {
           host_filtered_box[host_filtered_count[class_idx] * 7 + dim_idx] =
               host_box[idx * num_output_box_feature_ + dim_idx];
         }
         host_filtered_count[class_idx] += 1;
       }
     }
-    // printf("host_filter_count[%d] = %d\n", class_idx ,
-    // host_filtered_count[class_idx]);
+    // printf("host_filter_count[%d] = %d\n", 
+    //        class_idx, host_filtered_count[class_idx]);
     if (host_filtered_count[class_idx] <= 0) continue;
 
     float host_sorted_filtered_box[host_filtered_count[class_idx] * 7];
