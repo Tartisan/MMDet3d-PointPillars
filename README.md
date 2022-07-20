@@ -14,7 +14,7 @@ Overall inference has five phases:
 ## Model && Data
 
 The demo use the waymo data from Waymo Open Dataset.
-The onnx file can be converted by [onnx_tools](https://github.com/Tartisan/mmdetection3d/tree/master/tools/onnx_tools)
+The onnx file can be converted by [onnx_tools](https://github.com/Tartisan/mmdetection3d/tree/master/tools/onnx_tools/pointpillars)
 
 ### Prerequisites
 
@@ -48,14 +48,14 @@ trt fp16 model < --- > pytorch model
 #### Performance in FP16
 
 ```
-| Function(unit:ms) | A100-SXM4-40GB |
-| ----------------- | -------------- |
-| Preprocess        | 0.43786  ms    |
-| Pfe               | 3.27231  ms    |
-| Scatter           | 0.085242 ms    |
-| Backbone          | 71.0085  ms    |
-| Postprocess       | 1.79278  ms    |
-| Summary           | 76.601   ms    |
+| Function(unit:ms) | NVIDIA RTX A4000 Laptop GPU |
+| ----------------- | --------------------------- |
+| Preprocess        | 0.43786  ms                 |
+| Pfe               | 3.27231  ms                 |
+| Scatter           | 0.085242 ms                 |
+| Backbone          | 71.0085  ms                 |
+| Postprocess       | 1.79278  ms                 |
+| Summary           | 76.601   ms                 |
 ```
 
 ## Note
