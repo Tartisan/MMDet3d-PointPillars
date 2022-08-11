@@ -1,7 +1,7 @@
 # PointPillars Inference with TensorRT
 
-This repository contains sources and model for [pointpillars](https://arxiv.org/abs/1812.05784) inference using TensorRT.
-The model is created with [mmdetection3d](https://github.com/open-mmlab/mmdetection3d).
+This repository contains sources and model for [PointPillars](https://arxiv.org/abs/1812.05784) inference using TensorRT.
+The model is created with [mmdetection3d](https://github.com/Tartisan/mmdetection3d).
 
 Overall inference has five phases:
 
@@ -38,12 +38,15 @@ $ ./demo
 You should install `open3d` in python environment.
 
 ```shell
-$ python tools/viewer.py
+$ cd tools
+$ python viewer.py
 ```
 
-<center><img src="https://images.weserv.nl/?url=https://article.biliimg.com/bfs/article/dd4b2ea349cb4c390804401006dbc00a32182792.png" width=49%> <img src="https://images.weserv.nl/?url=https://article.biliimg.com/bfs/article/b92f9f1862b63c9ef8ce970e645c73092d302ad3.png" width=50%>
-trt fp16 model < --- > pytorch model
-</center>
+| trt fp16 | pytorch |
+| -------- | ------- |
+| ![trt fp16](https://tvax2.sinaimg.cn/large/0080fUsgly1h534cyivy0j31e70qrh62.jpg) | ![pytorch](https://tva3.sinaimg.cn/large/0080fUsgly1h534bzakywj31eg0qn1bm.jpg) |
+
+
 
 #### Performance in FP16
 
@@ -66,6 +69,6 @@ trt fp16 model < --- > pytorch model
 ## References
 
 - [PointPillars: Fast Encoders for Object Detection from Point Clouds](https://arxiv.org/abs/1812.05784)
-- [mmdetection3d](https://github.com/open-mmlab/mmdetection3d)
+- [mmdetection3d](https://github.com/Tartisan/mmdetection3d)
 - [mmdet_pp](https://github.com/perhapswo/mmdet_pp)
 - [CUDA-PointPillars](https://github.com/NVIDIA-AI-IOT/CUDA-PointPillars)

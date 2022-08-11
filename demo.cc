@@ -92,8 +92,8 @@ void Boxes2Txt(const std::vector<float> &boxes,
       for (int j = 0; j < num_feature; ++j) {
         ofFile << boxes.at(i * num_feature + j) << " ";
       }
-      ofFile << labels.at(i) << " ";
       ofFile << scores.at(i) << " ";
+      ofFile << labels.at(i) << " ";
       ofFile << "\n";
     }
   }

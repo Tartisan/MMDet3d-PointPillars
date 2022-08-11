@@ -2,11 +2,11 @@ LoadDim: 5
 UseDim: 4
 UseOnnx: True
 
-PfeOnnx: /workspace/code/mmdet3d-pointpillars/model/pts_voxel_encoder.onnx
-BackboneOnnx: /workspace/code/mmdet3d-pointpillars/model/pts_backbone.onnx
+PfeOnnx: ../model/pts_voxel_encoder.onnx
+BackboneOnnx: ../model/pts_backbone.onnx
 
-ModelConfig: /workspace/code/mmdet3d-pointpillars/cfgs/hv_pointpillars_secfpn_aicv.yaml
-AnchorFile: /workspace/code/mmdet3d-pointpillars/cfgs/anchors.txt
+ModelConfig: ../cfgs/hv_pointpillars_secfpn_aicv.yaml
+AnchorFile: ../cfgs/anchors.txt
 
-InputFile: /workspace/code/mmdet3d-pointpillars/data/000022.bin
-OutputFile: /workspace/code/mmdet3d-pointpillars/data/boxes.txt
+InputFile: ../data/000022.bin
+OutputFile: ../data/boxes.txt
